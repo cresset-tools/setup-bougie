@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Ensure dist/ is up to date
+        run: git diff --exit-code -- dist
+
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: setup
+        uses: ./
+        with:
+          cache: false
+      - run: bougie --version
+      - run: bgx --version
+      - name: Check resolved version output
+        shell: bash
+        run: test -n "${{ steps.setup.outputs.version }}"
+
+  php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          php-version: '8.4'
+      - run: bougie php list
+
+  # The real E2E: scaffold a Mage-OS shop the way a user's checkout looks
+  # and bring the whole stack up with `bougie start`.
+  mageos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+      - name: Scaffold a Mage-OS shop
+        run: bougie new shop --starter mageos
+      - name: Bring the shop up
+        working-directory: shop
+        run: bougie start --format json-v1
+      - name: Smoke-test the storefront
+        working-directory: shop
+        run: |
+          url=$(bougie server --format json-v1 | jq -r .url)
+          echo "storefront: $url"
+          curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' "$url"
+      - name: Shut down
+        if: always()
+        working-directory: shop
+        run: bougie down || true
+      - name: Upload bougie logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bougie-logs
+          path: |
+            ~/.local/share/bougie/state/bougied.log
+            ~/.local/share/bougie/state/services/**/log/*
+          if-no-files-found: ignore

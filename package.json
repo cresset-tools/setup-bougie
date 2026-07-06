@@ -1,0 +1,27 @@
+{
+  "name": "setup-bougie",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Set up bougie — the Composer-compatible package manager and PHP toolchain manager — in GitHub Actions",
+  "license": "EUPL-1.2",
+  "repository": "github:cresset-tools/setup-bougie",
+  "scripts": {
+    "build": "ncc build src/setup.ts -o dist/setup --minify && ncc build src/post.ts -o dist/post --minify",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx test/lib.test.ts"
+  },
+  "dependencies": {
+    "@actions/cache": "^4.0.0",
+    "@actions/core": "^1.11.0",
+    "@actions/exec": "^1.1.1",
+    "@actions/glob": "^0.4.0",
+    "@actions/http-client": "^2.2.0",
+    "@actions/tool-cache": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "@vercel/ncc": "^0.38.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}

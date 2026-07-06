@@ -1,0 +1,57 @@
+name: setup-bougie
+description: >-
+  Install bougie — the Composer-compatible package manager and PHP toolchain
+  manager — and cache PHP interpreters, Composer packages, and service
+  runtimes between runs.
+author: cresset-tools
+branding:
+  icon: package
+  color: orange
+
+inputs:
+  version:
+    description: >-
+      bougie version to install, e.g. "0.43.2". Defaults to the latest
+      GitHub release.
+    default: latest
+  php-version:
+    description: >-
+      Optional PHP version to pre-install (e.g. "8.4"). Projects normally
+      pin PHP via composer.json / bougie.toml and need no explicit version;
+      use this to run PHP outside a project.
+    default: ''
+  telemetry:
+    description: >-
+      Opt this workflow in to bougie's anonymous usage telemetry ("true",
+      or "local" to only write events to disk). Telemetry stays off in CI
+      unless explicitly enabled; DO_NOT_TRACK always wins.
+    default: 'false'
+  cache:
+    description: >-
+      Cache PHP interpreters, Composer packages, and service runtimes
+      across runs.
+    default: 'true'
+  cache-dependency-glob:
+    description: >-
+      Glob(s) hashed into the cache key, newline-separated. Defaults to
+      every composer.lock in the workspace.
+    default: '**/composer.lock'
+  cache-suffix:
+    description: >-
+      Extra cache-key segment to isolate parallel jobs that share a
+      lockfile.
+    default: ''
+  github-token:
+    description: Token used to resolve "latest" against the GitHub Releases API.
+    default: ${{ github.token }}
+
+outputs:
+  version:
+    description: The bougie version that was installed (resolved from "latest").
+  cache-hit:
+    description: Whether the cache was restored from an exact key match.
+
+runs:
+  using: node24
+  main: dist/setup/index.js
+  post: dist/post/index.js
